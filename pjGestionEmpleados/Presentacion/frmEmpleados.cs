@@ -1,5 +1,6 @@
 ﻿using pjGestionEmpleados.Datos;
 using pjGestionEmpleados.Entidades;
+using pjGestionEmpleados.Presentacion.Reportes;
 using System;
 using System.Windows.Forms;
 
@@ -7,8 +8,9 @@ namespace pjGestionEmpleados.Presentacion
 {
     public partial class frmEmpleados : Form
     {
-        #region
+        #region Variables
         int iCodigoEmpleado = 0;
+        bool bEstadoGuardar = true;
 
         #endregion
         public frmEmpleados()
@@ -98,7 +100,7 @@ namespace pjGestionEmpleados.Presentacion
             iCodigoEmpleado = 0;
 
         }
-        private void GuardarEmpleado() 
+        private void GuardarEmpleado()
         {
             E_Empleado empleado = new E_Empleado
             {
@@ -107,8 +109,8 @@ namespace pjGestionEmpleados.Presentacion
                 Telefono_empleado = txtTelefono.Text,
                 Salario_empleado = Convert.ToDecimal(txtSalario.Text),
                 Fecha_nac_empleado = dtpFechaNacimiento.Value,
-                Id_departamento = (int)cmbDepartamento.SelectedValue,
-                Id_cargo = (int)cmbCargo.SelectedValue
+                Id_departamento = Convert.ToInt32(cmbDepartamento.SelectedValue),
+                Id_cargo = Convert.ToInt32(cmbCargo.SelectedValue)
             };
 
             D_Empleados datos = new D_Empleados();
@@ -131,13 +133,67 @@ namespace pjGestionEmpleados.Presentacion
             }
 
         }
+        private void ActualizarEmpleado()
+        {
+            E_Empleado empleado = new E_Empleado
+            {
+                Id_empleado = iCodigoEmpleado,
+                Nombre_empleado = txtNombre.Text,
+                Direccion_empleado = txtDireccion.Text,
+                Telefono_empleado = txtTelefono.Text,
+                Salario_empleado = Convert.ToDecimal(txtSalario.Text),
+                Fecha_nac_empleado = dtpFechaNacimiento.Value,
+                Id_departamento = Convert.ToInt32(cmbDepartamento.SelectedValue),
+                Id_cargo = Convert.ToInt32(cmbCargo.SelectedValue)
+            };
+
+            D_Empleados datos = new D_Empleados();
+            string respuesta = datos.Actualizar_Empleado(empleado);
+
+            if (respuesta == "Ok")
+            {
+                CargarEmpleados("%");
+                Limpiar();
+                ActivarTextos(false);
+                ActivarBotones(true);
+
+                MessageBox.Show("Datos Actualizados Correctamente", "Sistema de Gestión de Empleados",
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                MessageBox.Show(respuesta, "Sistema de Gestión de Empleados",
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+        private void DesactivarEmpleado(int iCodigoEmpleado)
+        {
+            D_Empleados datos = new D_Empleados();
+            string respuesta = datos.Desactivar_Empleado(iCodigoEmpleado);
+
+            if (respuesta == "Ok")
+            {
+                CargarEmpleados("%");
+                Limpiar();
+                ActivarTextos(false);
+                ActivarBotones(true);
+
+                MessageBox.Show("Registro Eliminado Correctamente", "Sistema de Gestión de Empleados",
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                MessageBox.Show(respuesta, "Sistema de Gestión de Empleados",
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
         private bool ValidarTextos()
         {
             bool hayTextosVacios = false;
 
             if (string.IsNullOrEmpty(txtNombre.Text)) hayTextosVacios = true;
-            if(string.IsNullOrEmpty(txtTelefono.Text)) hayTextosVacios = true;
-            if(string.IsNullOrEmpty(txtSalario.Text)) hayTextosVacios = true;
+            if (string.IsNullOrEmpty(txtTelefono.Text)) hayTextosVacios = true;
+            if (string.IsNullOrEmpty(txtSalario.Text)) hayTextosVacios = true;
 
             return hayTextosVacios;
         }
@@ -149,39 +205,30 @@ namespace pjGestionEmpleados.Presentacion
             CargarDepartamentos();
             CargarCargos();
         }
-
         private void btnBuscar_Click(object sender, EventArgs e)
         {
             CargarEmpleados(txtBuscar.Text);
         }
-
         private void txtBuscar_TextChanged(object sender, EventArgs e)
         {
             CargarEmpleados(txtBuscar.Text);
         }
+        private void dgvGrillar_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            SeleccionarEmpleado();
+        }
 
         private void btnNuevo_Click(object sender, EventArgs e)
         {
+            bEstadoGuardar = true;
+            iCodigoEmpleado = 0;
+
             ActivarTextos(true);
             ActivarBotones(false);
             Limpiar();
 
             txtNombre.Select();
         }
-
-        private void btnCancelar_Click(object sender, EventArgs e)
-        {
-            ActivarTextos(false);
-            ActivarBotones(true);
-
-            Limpiar();
-        }
-
-        private void dgvGrillar_CellClick(object sender, DataGridViewCellEventArgs e)
-        {
-            SeleccionarEmpleado();
-        }
-
         private void btnActualizar_Click(object sender, EventArgs e)
         {
             if (iCodigoEmpleado == 0)
@@ -191,10 +238,30 @@ namespace pjGestionEmpleados.Presentacion
             }
             else
             {
+                bEstadoGuardar = false;
+
                 ActivarTextos(true);
                 ActivarBotones(false);
 
                 txtNombre.Select();
+            }
+        }
+        private void btnEliminar_Click(object sender, EventArgs e)
+        {
+            if (iCodigoEmpleado == 0)
+            {
+                MessageBox.Show("Seleccione un Registro", "Sistema de Gestión de Empleados"
+                    , MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            else
+            {
+                DialogResult resultado = MessageBox.Show("Está seguro de eliminar este registro?", "Sistema de Gestión de Empleados",
+                                                        MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (resultado == DialogResult.Yes)
+                {
+                    DesactivarEmpleado(iCodigoEmpleado);
+                }
             }
         }
 
@@ -207,13 +274,38 @@ namespace pjGestionEmpleados.Presentacion
             }
             else
             {
-                GuardarEmpleado();
+                if (bEstadoGuardar)
+                {
+                    GuardarEmpleado();
+                }
+                else
+                {
+                    ActualizarEmpleado();
+                }
             }
+        }
+        private void btnCancelar_Click(object sender, EventArgs e)
+        {
+            bEstadoGuardar = true;
+            iCodigoEmpleado = 0;
+
+            ActivarTextos(false);
+            ActivarBotones(true);
+
+            Limpiar();
         }
 
         private void btnSalir_Click(object sender, EventArgs e)
         {
             Application.Exit();
+        }
+
+        private void btnReporte_Click(object sender, EventArgs e)
+        {
+            frmReporte frmReporte = new frmReporte();
+            frmReporte.txtFiltrar.Text = txtBuscar.Text;
+
+            frmReporte.ShowDialog();
         }
     }
 }
